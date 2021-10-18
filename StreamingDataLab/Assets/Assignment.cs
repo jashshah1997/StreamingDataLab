@@ -7,7 +7,7 @@ Pixel RPG characters created by Sean Browning.
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using System.IO;
 
 #region Assignment Instructions
 
@@ -73,19 +73,75 @@ public partial class PartyCharacter
 static public class AssignmentPart1
 {
 
+    const int PartyCharacterSaveDataSignifier = 0;
+    const int EquipmentSaveDataSignifier = 1;
+    const int AfflictionSaveDataSignifier = 2;
+    const int StartOfNewPartySaveDataSignifier = 3;
+
     static public void SavePartyButtonPressed()
     {
+        StreamWriter sw = new StreamWriter(Application.dataPath + Path.DirectorySeparatorChar + "OurBelovedSaveFile.txt");
+
+        Debug.Log("Start of loop");
         foreach (PartyCharacter pc in GameContent.partyCharacters)
         {
             Debug.Log("PC class id == " + pc.classID);
+            sw.WriteLine(PartyCharacterSaveDataSignifier +
+                "," + pc.classID +
+                "," + pc.health +
+                "," + pc.mana +
+                "," + pc.strength +
+                "," + pc.agility +
+                "," + pc.wisdom);
+
+            foreach (int equipID in pc.equipment)
+            {
+                sw.WriteLine(EquipmentSaveDataSignifier + "," + equipID);
+            }
+
         }
+
+        sw.Close();
+        Debug.Log("End of loop");
     }
 
     static public void LoadPartyButtonPressed()
-    {
+    { 
+        string path = Application.dataPath + Path.DirectorySeparatorChar + "OurBelovedSaveFile.txt";
 
-        //GameContent.partyCharacters.Clear();
+        if (File.Exists(path))
+        {
+            GameContent.partyCharacters.Clear();
+            string line = "";
+            StreamReader sr = new StreamReader(path);
 
+            while ((line = sr.ReadLine()) != null)
+            {
+                string[] csv = line.Split(',');
+
+                int saveDataSignifier = int.Parse(csv[0]);
+                if (saveDataSignifier == PartyCharacterSaveDataSignifier)
+                {
+                    PartyCharacter newChar = new PartyCharacter(
+                        int.Parse(csv[1]), // ClassID
+                        int.Parse(csv[2]), // Health
+                        int.Parse(csv[3]), // Mana
+                        int.Parse(csv[4]), // Strength
+                        int.Parse(csv[5]), // Agility
+                        int.Parse(csv[6])  // Wisdom
+                        );
+                    GameContent.partyCharacters.AddLast(newChar);
+                } 
+                else if (saveDataSignifier == EquipmentSaveDataSignifier)
+                {
+                    GameContent.partyCharacters.Last.Value.equipment.AddLast(int.Parse(csv[1]));
+                } 
+                else if (saveDataSignifier == AfflictionSaveDataSignifier)
+                {
+                    // TODO: Add player afflictions
+                }
+            }
+        }
         GameContent.RefreshUI();
 
     }
